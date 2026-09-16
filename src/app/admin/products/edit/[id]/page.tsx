@@ -1,0 +1,403 @@
+"use client";
+
+import { useState, useEffect, useRef, use } from 'react';
+import { ArrowLeft, Upload, Loader2, Save, Trash2, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState({
+    title: '',
+    subtitle: '',
+    description: '',
+    price: '',
+    originalPrice: '',
+    inStock: 'true',
+    categoryId: '',
+    imageSrc: '',
+    stockCount: 0,
+    slug: ''
+  });
+
+  useEffect(() => {
+    // Fetch categories and product data in parallel
+    Promise.all([
+      fetch('/api/admin/categories').then(res => res.json()),
+      fetch(`/api/admin/products/${id}`).then(res => res.json())
+    ]).then(([catData, prodData]) => {
+      if (catData.success) {
+        setCategories(catData.data);
+      }
+      if (prodData.success) {
+        const p = prodData.data;
+        setFormData({
+          title: p.title || '',
+          subtitle: p.subtitle || '',
+          description: p.description || '',
+          price: p.price ? p.price.toString() : '',
+          originalPrice: p.originalPrice ? p.originalPrice.toString() : '',
+          inStock: p.stockCount > 0 ? 'true' : 'false',
+          categoryId: p.categoryId || '',
+          imageSrc: p.imageSrc || '',
+          stockCount: p.stockCount || 0,
+          slug: p.slug || ''
+        });
+      } else {
+        toast.error('Failed to load product details');
+        router.push('/admin/products');
+      }
+      setIsLoading(false);
+    }).catch(err => {
+      console.error(err);
+      toast.error('Network error loading data');
+      setIsLoading(false);
+    });
+  }, [id, router]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const data = new FormData();
+    data.append('file', file);
+
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: data });
+      const json = await res.json();
+      if (json.success) {
+        setFormData({ ...formData, imageSrc: json.url });
+        toast.success('Image uploaded successfully');
+      } else {
+        toast.error(json.error || 'Upload failed');
+      }
+    } catch (err) {
+      toast.error('Network error during upload');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const payload = {
+        ...formData,
+        price: Number(formData.price),
+        originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+        stockCount: formData.inStock === 'true' ? Math.max(1, formData.stockCount) : 0
+      };
+
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success('Product updated successfully');
+        router.push('/admin/products');
+      } else {
+        toast.error(json.error || 'Failed to update product');
+      }
+    } catch (err) {
+      toast.error('Network error while saving');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success('Product deleted successfully');
+        router.push('/admin/products');
+      } else {
+        toast.error(json.error || 'Failed to delete product');
+        setIsDeleteModalOpen(false);
+      }
+    } catch (err) {
+      toast.error('Network error while deleting');
+      setIsDeleteModalOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="animate-spin text-[#7355A4]" size={40} />
+        <p className="text-gray-500 font-medium tracking-wide">Loading Product Details...</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-7xl mx-auto pb-12 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+        <div className="flex items-center gap-4">
+          <Link href="/admin/products" className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-gray-500 hover:text-[#1F2937]">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-serif font-bold text-[#1F2937]">Edit Product</h1>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#7355A4] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">
+                ID: {id.substring(0, 8)}
+              </span>
+            </div>
+            <p className="text-sm text-gray-500">Update item details for your atelier catalog.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column (7 cols) - Main Details & Media */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+            <h3 className="text-lg font-bold text-[#1F2937] mb-2">Product Information</h3>
+            
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Product Title</label>
+              <input 
+                required 
+                type="text" 
+                value={formData.title} 
+                onChange={e => setFormData({...formData, title: e.target.value})} 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-gray-50/50 focus:bg-white" 
+                placeholder="e.g. The Artisan Leather Journal" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Subtitle <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <input 
+                type="text" 
+                value={formData.subtitle} 
+                onChange={e => setFormData({...formData, subtitle: e.target.value})} 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-gray-50/50 focus:bg-white" 
+                placeholder="A short tagline or quick description" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Rich Description</label>
+              <textarea 
+                required 
+                rows={8} 
+                value={formData.description} 
+                onChange={e => setFormData({...formData, description: e.target.value})} 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-gray-50/50 focus:bg-white resize-none" 
+                placeholder="Write a detailed, editorial description highlighting the luxury materials and craftsmanship..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+            <h3 className="text-lg font-bold text-[#1F2937]">Media & Photography</h3>
+            <p className="text-sm text-gray-500 -mt-2 mb-4">Upload high-quality images of the product. First image will be the cover.</p>
+            
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-72 border-2 border-dashed border-purple-200 rounded-2xl bg-purple-50/30 hover:bg-purple-50 transition-colors cursor-pointer flex flex-col items-center justify-center overflow-hidden relative"
+            >
+              {formData.imageSrc ? (
+                <div className="w-full h-full relative group">
+                  <img src={formData.imageSrc} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white font-bold bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/20">Change Cover Image</span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4">
+                    {isUploading ? <Loader2 className="animate-spin text-[#7355A4]" size={28} /> : <Upload className="text-[#7355A4]" size={28} />}
+                  </div>
+                  <span className="text-base text-gray-700 font-bold">{isUploading ? 'Uploading Image...' : 'Click or Drag & Drop'}</span>
+                  <span className="text-sm text-gray-400 mt-1">PNG, JPG up to 10MB</span>
+                </>
+              )}
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (5 cols) - Pricing & Inventory */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+            <h3 className="text-lg font-bold text-[#1F2937] mb-2">Pricing Strategy</h3>
+            
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Selling Price (৳)</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">৳</span>
+                <input 
+                  required 
+                  type="number" 
+                  min="0" 
+                  step="0.01" 
+                  value={formData.price} 
+                  onChange={e => setFormData({...formData, price: e.target.value})} 
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-gray-50/50 focus:bg-white text-lg font-bold text-[#1F2937]" 
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Original/Compare Price <span className="text-gray-400 font-normal">(Optional)</span></label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">৳</span>
+                <input 
+                  type="number" 
+                  min="0" 
+                  step="0.01" 
+                  value={formData.originalPrice} 
+                  onChange={e => setFormData({...formData, originalPrice: e.target.value})} 
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-gray-50/50 focus:bg-white line-through text-gray-500" 
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+            <h3 className="text-lg font-bold text-[#1F2937] mb-2">Organization & Inventory</h3>
+            
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Category Collection</label>
+              <select 
+                required 
+                value={formData.categoryId} 
+                onChange={e => setFormData({...formData, categoryId: e.target.value})} 
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-white font-medium text-gray-700 appearance-none"
+              >
+                <option value="" disabled>Select a collection</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">Stock Status</label>
+              
+              {formData.inStock === 'false' || formData.stockCount === 0 ? (
+                <div className="mb-3 flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
+                  <AlertCircle size={16} />
+                  <span className="text-sm font-bold">This item is currently Out of Stock</span>
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <label className={`border rounded-xl p-3 flex items-center justify-center cursor-pointer transition-colors ${formData.inStock === 'true' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  <input type="radio" name="stock" value="true" checked={formData.inStock === 'true'} onChange={() => setFormData({...formData, inStock: 'true'})} className="hidden" />
+                  <span className="font-bold text-sm tracking-wider uppercase">In Stock</span>
+                </label>
+                <label className={`border rounded-xl p-3 flex items-center justify-center cursor-pointer transition-colors ${formData.inStock === 'false' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  <input type="radio" name="stock" value="false" checked={formData.inStock === 'false'} onChange={() => setFormData({...formData, inStock: 'false'})} className="hidden" />
+                  <span className="font-bold text-sm tracking-wider uppercase">Out of Stock</span>
+                </label>
+              </div>
+
+              {formData.inStock === 'true' && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Available Quantity</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={formData.stockCount || ''} 
+                    onChange={e => setFormData({...formData, stockCount: parseInt(e.target.value) || 0})} 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#7355A4] transition-all bg-gray-50/50 focus:bg-white" 
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">SKU (Slug)</label>
+              <input 
+                type="text" 
+                value={formData.slug} 
+                disabled
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed font-mono text-xs" 
+              />
+              <p className="text-xs text-gray-400 mt-1.5">SKU is auto-generated and serves as the product URL.</p>
+            </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center justify-start gap-3 pt-2">
+            <button 
+              type="button"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="p-2.5 text-gray-400 hover:text-red-600 bg-white border border-gray-200 hover:bg-red-50 hover:border-red-100 rounded-xl transition-all shadow-sm"
+              title="Delete Product"
+            >
+              <Trash2 size={18} />
+            </button>
+            <Link href="/admin/products" className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
+              Cancel
+            </Link>
+            <button 
+              type="submit" 
+              disabled={isSaving || isUploading} 
+              className="bg-[#7355A4] text-white px-6 py-2.5 rounded-xl font-bold tracking-wider hover:bg-[#5E4389] shadow-md shadow-purple-500/20 transition-all flex items-center gap-2 text-sm uppercase disabled:opacity-70"
+            >
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              পরিবর্তন সেভ করুন (Save Changes)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsDeleteModalOpen(false)} />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 relative z-10 border border-red-100">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Product</h3>
+              <p className="text-gray-500 text-sm mb-6">Are you absolutely sure you want to delete <span className="font-semibold text-gray-700">{formData.title}</span>? This action is permanent and cannot be undone.</p>
+              <div className="flex gap-3 justify-end">
+                <button type="button" onClick={() => setIsDeleteModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                <button 
+                  type="button" 
+                  onClick={handleDelete} 
+                  disabled={isDeleting}
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2"
+                >
+                  {isDeleting ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Yes, Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </form>
+  );
+}
