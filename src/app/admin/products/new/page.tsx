@@ -19,6 +19,7 @@ export default function NewProductPage() {
     inStock: 'true',
     categoryId: '',
     imageSrc: '',
+    stockCount: 0,
   });
 
   const [isUploading, setIsUploading] = useState(false);
