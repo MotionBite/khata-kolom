@@ -5,8 +5,9 @@
   --foreground: #1F2937; /* Warm charcoal */
 }
 
-html {
+html, body {
   font-size: 110%; /* Scales base text and spacing up globally */
+  overflow-x: hidden;
 }
 
 @theme inline {
