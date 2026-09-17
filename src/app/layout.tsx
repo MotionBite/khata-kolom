@@ -36,14 +36,16 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-[#FDFBF7] text-[#1F2937] font-sans flex flex-col overflow-x-hidden">
         <StoreProvider>
-          <Header />
-          <CartDrawer />
-          <WishlistDrawer />
-          <main className="flex-grow">
-            {children}
-          </main>
-          <Footer />
-          <ToastContainer position="top-center" />
+          <div className="relative w-full overflow-x-hidden flex flex-col min-h-screen">
+            <Header />
+            <CartDrawer />
+            <WishlistDrawer />
+            <main className="flex-grow w-full">
+              {children}
+            </main>
+            <Footer />
+            <ToastContainer position="top-center" />
+          </div>
         </StoreProvider>
       </body>
     </html>
