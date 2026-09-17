@@ -143,7 +143,7 @@ export default function Footer() {
             <h3 className="text-xs font-black tracking-widest text-[#1F2430] uppercase mb-6">
               Collections
             </h3>
-            <ul className="space-y-4">
+            <ul className="space-y-1">
               {['Notebooks', 'Pens & Pencils', 'Office Supplies', 'Bags & Cases', 'Art & Craft', 'Planners', 'Gift Sets'].map((item) => (
                 <li key={item}>
                   <Link href="#" className="text-xs text-slate-500 hover:text-[#7355A4] transition-colors">
@@ -159,7 +159,7 @@ export default function Footer() {
             <h3 className="text-xs font-black tracking-widest text-[#1F2430] uppercase mb-6">
               Concierge
             </h3>
-            <ul className="space-y-4">
+            <ul className="space-y-1">
               {['Help Center', 'Shipping & Delivery', 'Returns & Refunds', 'Track Your Order', 'FAQs', 'Contact Us'].map((item) => (
                 <li key={item}>
                   <Link href="#" className="text-xs text-slate-500 hover:text-[#7355A4] transition-colors">
@@ -175,7 +175,7 @@ export default function Footer() {
             <h3 className="text-xs font-black tracking-widest text-[#1F2430] uppercase mb-6">
               Atelier
             </h3>
-            <ul className="space-y-4">
+            <ul className="space-y-1">
               {['About Us', 'Blog', 'Careers', 'Privacy Policy', 'Terms & Conditions'].map((item) => (
                 <li key={item}>
                   <Link href="#" className="text-xs text-slate-500 hover:text-[#7355A4] transition-colors">
