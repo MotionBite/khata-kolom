@@ -34,7 +34,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${outfit.variable} antialiased`}
     >
-      <body className="min-h-screen bg-[#FDFBF7] text-[#1F2937] font-sans flex flex-col">
+      <body className="min-h-screen bg-[#FDFBF7] text-[#1F2937] font-sans flex flex-col overflow-x-hidden">
         <StoreProvider>
           <Header />
           <CartDrawer />
