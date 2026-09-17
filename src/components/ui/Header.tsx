@@ -91,40 +91,12 @@ export default function Header() {
 
 
           {/* Center Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-8 h-full">
+          <nav className="hidden lg:flex items-center gap-5 h-full">
             <Link href="/" className="text-[12px] font-bold tracking-[0.15em] text-[#1F2430] hover:text-[#7355A4] transition-colors uppercase">
               HOME
             </Link>
             
-            {/* Collections Mega Menu */}
-            <div className="relative group h-full flex items-center">
-              <Link href="/categories" className="text-[12px] font-bold tracking-[0.15em] text-gray-700 hover:text-[#7355A4] transition-colors uppercase flex items-center gap-1.5 cursor-pointer">
-                COLLECTIONS
-                <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" />
-              </Link>
-              
-              {/* Dropdown Panel */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[520px] bg-white rounded-2xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-4 group-hover:translate-y-0 p-6 z-50 before:content-[''] before:absolute before:-top-6 before:left-0 before:w-full before:h-6">
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { name: 'Notebooks', count: '24 Items', image: '/notebook.png', link: '/category/notebooks' },
-                    { name: 'Luxury Pens', count: '18 Items', image: '/pen.png', link: '/category/pens' },
-                    { name: 'Planners', count: '12 Items', image: '/note.png', link: '/category/planners' },
-                    { name: 'Accessories', count: '35 Items', image: '/stiki.png', link: '/category/accessories' },
-                  ].map((col) => (
-                    <Link key={col.name} href={col.link} className="flex items-center gap-4 p-3 rounded-xl hover:bg-purple-50/50 transition-colors group/item">
-                      <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-100">
-                        <img src={col.image} alt={col.name} className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-[#1F2430] tracking-wider uppercase mb-0.5 group-hover/item:text-[#7355A4] transition-colors">{col.name}</div>
-                        <div className="text-[10px] font-medium text-gray-500">{col.count}</div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+
 
             <Link href="/best-sellers" className="text-[12px] font-bold tracking-[0.15em] text-gray-700 hover:text-[#7355A4] transition-colors uppercase">
               BEST SELLERS
@@ -241,9 +213,7 @@ export default function Header() {
                   <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-sm font-bold tracking-widest text-[#1F2430] hover:text-[#7355A4] hover:bg-purple-50 rounded-xl transition-all uppercase">
                     Home
                   </Link>
-                  <Link href="/categories" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-sm font-bold tracking-widest text-[#1F2430] hover:text-[#7355A4] hover:bg-purple-50 rounded-xl transition-all uppercase">
-                    Collections
-                  </Link>
+
                   <Link href="/best-sellers" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-sm font-bold tracking-widest text-[#1F2430] hover:text-[#7355A4] hover:bg-purple-50 rounded-xl transition-all uppercase">
                     Best Sellers
                   </Link>
